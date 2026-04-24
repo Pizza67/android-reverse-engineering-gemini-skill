@@ -4,6 +4,26 @@
 
 jadx requires Java 17 or later.
 
+### Windows (PowerShell)
+
+**Option 1: winget (recommended)**
+
+```powershell
+winget install Microsoft.OpenJDK.17
+```
+
+**Option 2: Chocolatey**
+
+```powershell
+choco install openjdk17
+```
+
+**Option 3: Manual**
+
+1. Go to <https://adoptium.net/temurin/releases/?version=17>
+2. Download the `.msi` installer for Windows x64
+3. Run the installer — it adds Java to `PATH` automatically
+
 ### Ubuntu / Debian
 
 ```bash
@@ -48,7 +68,37 @@ java -version
 
 jadx is the Java decompiler used to convert APK/JAR/AAR files to readable Java source.
 
-### Option 1: GitHub Releases (recommended)
+### Windows (PowerShell)
+
+**Option 1: GitHub Releases (recommended)**
+
+```powershell
+# Download and extract
+Invoke-WebRequest -Uri "https://github.com/skylot/jadx/releases/latest/download/jadx-1.5.1.zip" -OutFile "$env:TEMP\jadx.zip"
+Expand-Archive "$env:TEMP\jadx.zip" -DestinationPath "$env:USERPROFILE\jadx"
+
+# Add to PATH for current session
+$env:PATH += ";$env:USERPROFILE\jadx\bin"
+
+# Add to PATH permanently
+[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$env:USERPROFILE\jadx\bin", "User")
+```
+
+> Check the [latest release](https://github.com/skylot/jadx/releases/latest) for the current version number.
+
+**Option 2: Chocolatey**
+
+```powershell
+choco install jadx
+```
+
+**Option 3: Scoop**
+
+```powershell
+scoop install jadx
+```
+
+### Option 1: GitHub Releases (Linux/macOS)
 
 1. Go to <https://github.com/skylot/jadx/releases/latest>
 2. Download the `jadx-<version>.zip` file (not the source archive)
@@ -78,7 +128,13 @@ export PATH="$(pwd)/build/jadx/bin:$PATH"
 
 ### Verify
 
+```powershell
+# Windows
+jadx.bat --version
+```
+
 ```bash
+# Linux / macOS
 jadx --version
 ```
 
@@ -88,7 +144,23 @@ jadx --version
 
 Fernflower is the JetBrains Java decompiler. It produces better output than jadx on complex Java constructs, lambdas, and generics. [Vineflower](https://github.com/Vineflower/vineflower) is the actively maintained community fork and is recommended over upstream Fernflower.
 
-### Option 1: Vineflower from GitHub Releases (recommended)
+### Windows (PowerShell)
+
+```powershell
+# Create directory and download Vineflower JAR
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\vineflower"
+Invoke-WebRequest -Uri "https://github.com/Vineflower/vineflower/releases/latest/download/vineflower-1.10.1.jar" -OutFile "$env:USERPROFILE\vineflower\vineflower.jar"
+
+# Set environment variable for current session
+$env:FERNFLOWER_JAR_PATH = "$env:USERPROFILE\vineflower\vineflower.jar"
+
+# Set permanently (requires restart of terminal)
+[Environment]::SetEnvironmentVariable("FERNFLOWER_JAR_PATH", "$env:USERPROFILE\vineflower\vineflower.jar", "User")
+```
+
+> Check the [latest release](https://github.com/Vineflower/vineflower/releases/latest) for the current version number.
+
+### Option 1: Vineflower from GitHub Releases (Linux/macOS)
 
 1. Go to <https://github.com/Vineflower/vineflower/releases/latest>
 2. Download `vineflower-<version>.jar`
@@ -111,7 +183,7 @@ cd fernflower
 export FERNFLOWER_JAR_PATH="$(pwd)/build/libs/fernflower.jar"
 ```
 
-### Option 3: Homebrew (Vineflower)
+### Option 3: Homebrew (Vineflower, macOS/Linux)
 
 ```bash
 brew install vineflower
@@ -119,7 +191,13 @@ brew install vineflower
 
 ### Verify
 
+```powershell
+# Windows
+java -jar "$env:FERNFLOWER_JAR_PATH" --version
+```
+
 ```bash
+# Linux / macOS
 java -jar "$FERNFLOWER_JAR_PATH" --version
 ```
 
@@ -131,7 +209,21 @@ java -jar "$FERNFLOWER_JAR_PATH" --version
 
 Converts Android DEX bytecode to standard Java JAR files.
 
-### GitHub Releases
+### Windows (PowerShell)
+
+```powershell
+# Download and extract
+Invoke-WebRequest -Uri "https://github.com/pxb1988/dex2jar/releases/latest/download/dex-tools-v2.4.zip" -OutFile "$env:TEMP\dex2jar.zip"
+Expand-Archive "$env:TEMP\dex2jar.zip" -DestinationPath "$env:USERPROFILE\dex2jar"
+
+# Add to PATH (adjust folder name to match the extracted directory)
+$env:PATH += ";$env:USERPROFILE\dex2jar\dex-tools-v2.4"
+[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$env:USERPROFILE\dex2jar\dex-tools-v2.4", "User")
+```
+
+> Check the [latest release](https://github.com/pxb1988/dex2jar/releases/latest) for the current version number and folder name.
+
+### GitHub Releases (Linux/macOS)
 
 1. Go to <https://github.com/pxb1988/dex2jar/releases/latest>
 2. Download and extract:
@@ -141,7 +233,7 @@ unzip dex-tools-*.zip -d ~/dex2jar
 export PATH="$HOME/dex2jar:$PATH"
 ```
 
-### Homebrew
+### Homebrew (macOS/Linux)
 
 ```bash
 brew install dex2jar
@@ -149,17 +241,27 @@ brew install dex2jar
 
 ### Verify
 
+```powershell
+# Windows
+d2j-dex2jar.bat --help
+```
+
 ```bash
+# Linux / macOS
 d2j-dex2jar --help
 ```
 
 ### Usage
 
-```bash
-# Convert APK (or DEX) to JAR
-d2j-dex2jar -f -o output.jar app.apk
+```powershell
+# Windows
+d2j-dex2jar.bat -f -o output.jar app.apk
+java -jar "$env:FERNFLOWER_JAR_PATH" output.jar decompiled\
+```
 
-# Then decompile with Fernflower
+```bash
+# Linux / macOS
+d2j-dex2jar -f -o output.jar app.apk
 java -jar vineflower.jar output.jar decompiled/
 ```
 
@@ -170,6 +272,13 @@ java -jar vineflower.jar output.jar decompiled/
 ### apktool
 
 Useful for decoding resources (XML layouts, drawables) that jadx sometimes handles poorly.
+
+```powershell
+# Windows (Chocolatey)
+choco install apktool
+
+# Windows (manual): https://apktool.org/docs/install
+```
 
 ```bash
 # Ubuntu/Debian
@@ -184,6 +293,14 @@ brew install apktool
 ### adb (Android Debug Bridge)
 
 Useful for pulling APKs directly from a connected Android device.
+
+```powershell
+# Windows (winget)
+winget install Google.PlatformTools
+
+# Windows (Chocolatey)
+choco install adb
+```
 
 ```bash
 # Ubuntu/Debian
@@ -212,10 +329,11 @@ adb pull /data/app/com.example.app-xxxx/base.apk ./app.apk
 
 | Problem | Solution |
 |---|---|
-| `jadx: command not found` | Ensure the jadx `bin/` directory is in your `$PATH` |
+| `jadx: command not found` / `jadx.bat` not recognized | Ensure the jadx `bin/` directory is in your `PATH` |
 | `Error: Could not find or load main class` | Java is missing or wrong version — verify with `java -version` |
 | jadx runs out of memory on large APKs | Increase heap: `jadx -Xmx4g -d output app.apk` or set `JAVA_OPTS="-Xmx4g"` |
 | Decompiled code has many `// Error` comments | Try `--show-bad-code` to see partial output, or use `--deobf` for obfuscated apps |
 | Fernflower hangs on a method | Use `-mpm=60` to set a 60-second timeout per method |
 | Fernflower JAR not found | Set `FERNFLOWER_JAR_PATH` env variable to the full path of the JAR |
 | dex2jar fails with `ZipException` | The APK may have a non-standard ZIP structure — try `jadx` instead |
+| Windows: `Execution Policy` error running scripts | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` in PowerShell as admin |
