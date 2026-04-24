@@ -1,19 +1,24 @@
 ---
-description: Decompile Android APK, XAPK, JAR, and AAR files using jadx or Fernflower/Vineflower. Reverse engineer Android apps, extract HTTP API endpoints (Retrofit, OkHttp, Volley), and trace call flows through obfuscated code.
-triggers:
-  - decompile APK
-  - decompile XAPK
-  - reverse engineer Android
-  - extract API
-  - analyze Android
+name: android-reverse-engineering
+description: Provides a structured workflow for decompiling Android APK, XAPK,
+  JAR, and AAR files using jadx or Fernflower/Vineflower, extracting HTTP API
+  endpoints (Retrofit, OkHttp, Volley), and tracing call flows through
+  obfuscated Android code. Use this skill when you need to reverse engineer an
+  Android app, extract API endpoints, or analyze an APK/AAR library.
+license: Apache-2.0
+metadata:
+  author: Pizza67 (ported from SimoneAvogadro/android-reverse-engineering-skill)
+  keywords:
+  - android
+  - reverse engineering
+  - APK
   - jadx
-  - fernflower
-  - vineflower
-  - follow call flow
-  - decompile JAR
-  - decompile AAR
-  - Android reverse engineering
-  - find Android API endpoints
+  - decompile
+  - API extraction
+  - call flow
+  - Retrofit
+  - OkHttp
+  - obfuscation
 ---
 
 # Android Reverse Engineering
