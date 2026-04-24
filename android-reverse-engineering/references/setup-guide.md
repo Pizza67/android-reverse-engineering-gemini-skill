@@ -72,19 +72,23 @@ jadx is the Java decompiler used to convert APK/JAR/AAR files to readable Java s
 
 **Option 1: GitHub Releases (recommended)**
 
+The snippet below automatically resolves the latest version, so it will always work regardless of future releases:
+
 ```powershell
-# Download and extract
-Invoke-WebRequest -Uri "https://github.com/skylot/jadx/releases/latest/download/jadx-1.5.1.zip" -OutFile "$env:TEMP\jadx.zip"
-Expand-Archive "$env:TEMP\jadx.zip" -DestinationPath "$env:USERPROFILE\jadx"
+# Resolve latest version tag and download
+$release = Invoke-RestMethod "https://api.github.com/repos/skylot/jadx/releases/latest"
+$version = $release.tag_name.TrimStart("v")
+$url = "https://github.com/skylot/jadx/releases/download/v$version/jadx-$version.zip"
+
+Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\jadx.zip"
+Expand-Archive "$env:TEMP\jadx.zip" -DestinationPath "$env:USERPROFILE\jadx" -Force
 
 # Add to PATH for current session
 $env:PATH += ";$env:USERPROFILE\jadx\bin"
 
-# Add to PATH permanently
+# Add to PATH permanently (takes effect in new terminals)
 [Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$env:USERPROFILE\jadx\bin", "User")
 ```
-
-> Check the [latest release](https://github.com/skylot/jadx/releases/latest) for the current version number.
 
 **Option 2: Chocolatey**
 
@@ -98,7 +102,7 @@ choco install jadx
 scoop install jadx
 ```
 
-### Option 1: GitHub Releases (Linux/macOS)
+### GitHub Releases (Linux/macOS)
 
 1. Go to <https://github.com/skylot/jadx/releases/latest>
 2. Download the `jadx-<version>.zip` file (not the source archive)
@@ -110,13 +114,13 @@ export PATH="$HOME/jadx/bin:$PATH"
 # Add the export line to your ~/.bashrc or ~/.zshrc for persistence
 ```
 
-### Option 2: Homebrew (macOS / Linux)
+### Homebrew (macOS / Linux)
 
 ```bash
 brew install jadx
 ```
 
-### Option 3: Build from source
+### Build from source
 
 ```bash
 git clone https://github.com/skylot/jadx.git
@@ -147,20 +151,22 @@ Fernflower is the JetBrains Java decompiler. It produces better output than jadx
 ### Windows (PowerShell)
 
 ```powershell
-# Create directory and download Vineflower JAR
+# Resolve latest version and download
+$release = Invoke-RestMethod "https://api.github.com/repos/Vineflower/vineflower/releases/latest"
+$version = $release.tag_name.TrimStart("v")
+$url = "https://github.com/Vineflower/vineflower/releases/download/$($release.tag_name)/vineflower-$version.jar"
+
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\vineflower"
-Invoke-WebRequest -Uri "https://github.com/Vineflower/vineflower/releases/latest/download/vineflower-1.10.1.jar" -OutFile "$env:USERPROFILE\vineflower\vineflower.jar"
+Invoke-WebRequest -Uri $url -OutFile "$env:USERPROFILE\vineflower\vineflower.jar"
 
 # Set environment variable for current session
 $env:FERNFLOWER_JAR_PATH = "$env:USERPROFILE\vineflower\vineflower.jar"
 
-# Set permanently (requires restart of terminal)
+# Set permanently (takes effect in new terminals)
 [Environment]::SetEnvironmentVariable("FERNFLOWER_JAR_PATH", "$env:USERPROFILE\vineflower\vineflower.jar", "User")
 ```
 
-> Check the [latest release](https://github.com/Vineflower/vineflower/releases/latest) for the current version number.
-
-### Option 1: Vineflower from GitHub Releases (Linux/macOS)
+### Vineflower from GitHub Releases (Linux/macOS)
 
 1. Go to <https://github.com/Vineflower/vineflower/releases/latest>
 2. Download `vineflower-<version>.jar`
@@ -173,7 +179,7 @@ export FERNFLOWER_JAR_PATH="$HOME/vineflower/vineflower.jar"
 # Add the export to ~/.bashrc or ~/.zshrc for persistence
 ```
 
-### Option 2: Build Fernflower from source
+### Build Fernflower from source
 
 ```bash
 git clone https://github.com/JetBrains/fernflower.git
@@ -183,7 +189,7 @@ cd fernflower
 export FERNFLOWER_JAR_PATH="$(pwd)/build/libs/fernflower.jar"
 ```
 
-### Option 3: Homebrew (Vineflower, macOS/Linux)
+### Homebrew (Vineflower, macOS/Linux)
 
 ```bash
 brew install vineflower
@@ -212,16 +218,18 @@ Converts Android DEX bytecode to standard Java JAR files.
 ### Windows (PowerShell)
 
 ```powershell
-# Download and extract
-Invoke-WebRequest -Uri "https://github.com/pxb1988/dex2jar/releases/latest/download/dex-tools-v2.4.zip" -OutFile "$env:TEMP\dex2jar.zip"
-Expand-Archive "$env:TEMP\dex2jar.zip" -DestinationPath "$env:USERPROFILE\dex2jar"
+# Resolve latest version and download
+$release = Invoke-RestMethod "https://api.github.com/repos/pxb1988/dex2jar/releases/latest"
+$asset = $release.assets | Where-Object { $_.name -like "dex-tools-*.zip" } | Select-Object -First 1
+Invoke-WebRequest -Uri $asset.browser_download_url -OutFile "$env:TEMP\dex2jar.zip"
 
-# Add to PATH (adjust folder name to match the extracted directory)
-$env:PATH += ";$env:USERPROFILE\dex2jar\dex-tools-v2.4"
-[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$env:USERPROFILE\dex2jar\dex-tools-v2.4", "User")
+Expand-Archive "$env:TEMP\dex2jar.zip" -DestinationPath "$env:USERPROFILE\dex2jar" -Force
+
+# Find extracted folder name and add to PATH
+$folder = (Get-ChildItem "$env:USERPROFILE\dex2jar" -Directory | Select-Object -First 1).FullName
+$env:PATH += ";$folder"
+[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";$folder", "User")
 ```
-
-> Check the [latest release](https://github.com/pxb1988/dex2jar/releases/latest) for the current version number and folder name.
 
 ### GitHub Releases (Linux/macOS)
 
@@ -331,6 +339,7 @@ adb pull /data/app/com.example.app-xxxx/base.apk ./app.apk
 |---|---|
 | `jadx: command not found` / `jadx.bat` not recognized | Ensure the jadx `bin/` directory is in your `PATH` |
 | `Error: Could not find or load main class` | Java is missing or wrong version — verify with `java -version` |
+| `Invoke-WebRequest: Not Found` on Windows | The hardcoded version URL is outdated — use the dynamic snippet with `Invoke-RestMethod` instead |
 | jadx runs out of memory on large APKs | Increase heap: `jadx -Xmx4g -d output app.apk` or set `JAVA_OPTS="-Xmx4g"` |
 | Decompiled code has many `// Error` comments | Try `--show-bad-code` to see partial output, or use `--deobf` for obfuscated apps |
 | Fernflower hangs on a method | Use `-mpm=60` to set a 60-second timeout per method |
