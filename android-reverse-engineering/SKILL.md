@@ -25,18 +25,53 @@ metadata:
 
 Decompile Android APK, XAPK, JAR, and AAR files using jadx and Fernflower/Vineflower, trace call flows through application code and libraries, and produce structured documentation of extracted APIs.
 
+## OS Detection — Run First
+
+**Before executing any command in this skill, detect the operating system and shell.**
+
+Run this detection step once at the start and remember the result for all subsequent phases:
+
+```powershell
+# Run this in the current shell to detect the environment
+$IsWindows = $PSVersionTable -ne $null
+```
+
+```bash
+# Or in bash/zsh
+uname -s   # returns "Linux", "Darwin", or starts with "MINGW"/"MSYS" on Windows Git Bash
+```
+
+Use the following rules to determine the environment:
+- If `$PSVersionTable` is defined → **PowerShell (Windows)**
+- If `uname` returns `Darwin` → **macOS (bash/zsh)**
+- If `uname` returns `Linux` → **Linux (bash)**
+- If running in Git Bash on Windows → treat as **bash**, but note that `jadx.bat` may be needed
+
+**Once detected, use only the appropriate commands for that OS throughout all phases. Do not run bash commands on Windows or vice versa.**
+
+---
+
 ## Prerequisites
 
 This skill requires **Java JDK 17+** and **jadx** to be installed. **Fernflower/Vineflower** and **dex2jar** are optional but recommended for better decompilation quality.
 
-Check dependencies by running:
+Check dependencies using the commands for your OS:
 
-```bash
-jadx --version
+**PowerShell (Windows):**
+```powershell
 java -version
+jadx.bat --version
+```
+
+**bash/zsh (Linux/macOS):**
+```bash
+java -version
+jadx --version
 ```
 
 If anything is missing, follow the installation instructions in `references/setup-guide.md`.
+
+---
 
 ## Workflow
 
@@ -46,7 +81,7 @@ Before decompiling, confirm that the required tools are available.
 
 **Required:**
 - Java JDK 17+: install via your system package manager or [adoptium.net](https://adoptium.net)
-- [jadx](https://github.com/skylot/jadx): `brew install jadx` / `apt install jadx` / download from GitHub releases
+- [jadx](https://github.com/skylot/jadx): `brew install jadx` / `apt install jadx` / `choco install jadx` / download from GitHub releases
 
 **Optional (recommended):**
 - [Vineflower](https://github.com/Vineflower/vineflower) or [Fernflower](https://github.com/JetBrains/fernflower) — better output on complex Java code
@@ -70,7 +105,24 @@ Use jadx (or Fernflower) to decompile the target file. Choose the engine based o
 | Complex lambdas, generics, streams | fernflower |
 | Quick overview of a large APK | jadx with `--no-res` |
 
-**Decompile with jadx:**
+**Decompile with jadx — PowerShell (Windows):**
+
+```powershell
+# Standard decompilation
+jadx.bat -d <output-dir> <file.apk>
+
+# With deobfuscation
+jadx.bat -d <output-dir> --deobf <file.apk>
+
+# Code only (skip resources, faster)
+jadx.bat -d <output-dir> --no-res <file.apk>
+
+# JAR or AAR
+jadx.bat -d <output-dir> <file.jar>
+jadx.bat -d <output-dir> <file.aar>
+```
+
+**Decompile with jadx — bash/zsh (Linux/macOS):**
 
 ```bash
 # Standard decompilation
@@ -87,22 +139,32 @@ jadx -d <output-dir> <file.jar>
 jadx -d <output-dir> <file.aar>
 ```
 
-**Decompile with Fernflower/Vineflower:**
+**Decompile with Fernflower/Vineflower** (same command on all platforms):
 
 ```bash
 # JAR/AAR directly
 java -jar fernflower.jar <file.jar> <output-dir>
 
 # APK: first convert DEX to JAR with dex2jar, then decompile
+# Windows:
+d2j-dex2jar.bat <file.apk> -o app.jar
+# Linux/macOS:
 d2j-dex2jar.sh <file.apk> -o app.jar
+
 java -jar fernflower.jar app.jar <output-dir>
 ```
 
-**XAPK files** (ZIP bundles from APKPure and similar stores): extract the archive, identify all `.apk` files inside (base + split APKs), and decompile the base APK first:
+**XAPK files — PowerShell (Windows):**
+
+```powershell
+Expand-Archive <file.xapk> -DestinationPath xapk-extracted
+jadx.bat -d <output-dir> xapk-extracted\base.apk
+```
+
+**XAPK files — bash/zsh (Linux/macOS):**
 
 ```bash
 unzip <file.xapk> -d xapk-extracted/
-# decompile the base APK
 jadx -d <output-dir> xapk-extracted/base.apk
 ```
 
@@ -114,13 +176,13 @@ Navigate the decompiled output to understand the app's architecture.
 
 **Actions:**
 
-1. **Read AndroidManifest.xml** from `<output-dir>/resources/AndroidManifest.xml`:
+1. **Read AndroidManifest.xml** from `<output-dir>/resources/AndroidManifest.xml` (or `<output-dir>\resources\AndroidManifest.xml` on Windows):
    - Identify the main launcher Activity
    - List all Activities, Services, BroadcastReceivers, ContentProviders
    - Note permissions (especially `INTERNET`, `ACCESS_NETWORK_STATE`)
    - Find the application class (`android:name` on `<application>`)
 
-2. **Survey the package structure** under `<output-dir>/sources/`:
+2. **Survey the package structure** under `<output-dir>/sources/` (or `<output-dir>\sources\` on Windows):
    - Identify the main app package and sub-packages
    - Distinguish app code from third-party libraries
    - Look for packages named `api`, `network`, `data`, `repository`, `service`, `retrofit`, `http` — these are where API calls live
@@ -129,7 +191,6 @@ Navigate the decompiled output to understand the app's architecture.
    - MVP: look for `Presenter` classes
    - MVVM: look for `ViewModel` classes and `LiveData`/`StateFlow`
    - Clean Architecture: look for `domain`, `data`, `presentation` packages
-   - This informs where to look for network calls in the next phases
 
 ### Phase 4: Trace Call Flows
 
@@ -151,29 +212,48 @@ Follow execution paths from user-facing entry points down to network calls.
 
 5. **Handle obfuscated code**: When class names are mangled, use string literals and library API calls as anchors. Retrofit annotations and URL strings are never obfuscated.
 
-See `references/call-flow-analysis.md` for detailed techniques and grep commands.
+See `references/call-flow-analysis.md` for detailed techniques and search commands.
 
 ### Phase 5: Extract and Document APIs
 
 Find all API endpoints and produce structured documentation.
 
-**Search for API calls:**
+**Search for API calls — PowerShell (Windows):**
+
+```powershell
+# Retrofit annotations
+Get-ChildItem -Recurse -Filter *.java <output-dir>\sources | Select-String '@GET|@POST|@PUT|@DELETE|@PATCH'
+
+# OkHttp calls
+Get-ChildItem -Recurse -Filter *.java <output-dir>\sources | Select-String 'OkHttpClient|Request\.Builder|newCall'
+
+# Hardcoded URLs
+Get-ChildItem -Recurse -Filter *.java <output-dir>\sources | Select-String 'https?://'
+
+# Auth patterns
+Get-ChildItem -Recurse -Filter *.java <output-dir>\sources | Select-String 'Authorization|Bearer|api_key|apiKey|token'
+
+# Volley
+Get-ChildItem -Recurse -Filter *.java <output-dir>\sources | Select-String 'StringRequest|JsonObjectRequest|JsonArrayRequest'
+```
+
+**Search for API calls — bash/zsh (Linux/macOS):**
 
 ```bash
 # Retrofit annotations
-grep -r '@GET\|@POST\|@PUT\|@DELETE\|@PATCH' <output-dir>/sources/
+grep -rn '@GET\|@POST\|@PUT\|@DELETE\|@PATCH' <output-dir>/sources/
 
 # OkHttp calls
-grep -r 'OkHttpClient\|Request\.Builder\|newCall' <output-dir>/sources/
+grep -rn 'OkHttpClient\|Request\.Builder\|newCall' <output-dir>/sources/
 
 # Hardcoded URLs
-grep -rE 'https?://[a-zA-Z0-9./_-]+' <output-dir>/sources/
+grep -rEn 'https?://[a-zA-Z0-9./_-]+' <output-dir>/sources/
 
 # Auth patterns
-grep -r 'Authorization\|Bearer\|api_key\|apiKey\|token' <output-dir>/sources/
+grep -rn 'Authorization\|Bearer\|api_key\|apiKey\|token' <output-dir>/sources/
 
 # Volley
-grep -r 'StringRequest\|JsonObjectRequest\|JsonArrayRequest' <output-dir>/sources/
+grep -rn 'StringRequest\|JsonObjectRequest\|JsonArrayRequest' <output-dir>/sources/
 ```
 
 Then, for each discovered endpoint, read the surrounding source code to extract:
@@ -200,6 +280,8 @@ Then, for each discovered endpoint, read the surrounding source code to extract:
 ```
 
 See `references/api-extraction-patterns.md` for library-specific search patterns and the full documentation template.
+
+---
 
 ## Output
 
